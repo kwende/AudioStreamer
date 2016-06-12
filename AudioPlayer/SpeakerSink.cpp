@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <string>
 #include <fstream>
+#include <iostream>
 
 SpeakerSink::SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
     char const* perFrameFileNamePrefix)
@@ -126,9 +127,11 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
 
         if (fOutFid != NULL && data != NULL) {
 
-            counter++; 
-            std::ofstream fout("c:/users/brush/desktop/output/" + std::to_string(counter) + ".audio", 
-                std::ios::binary | std::ios::app); 
+            std::cout << "."; 
+
+            //counter++; 
+            //std::ofstream fout("c:/users/ben/desktop/output/" + std::to_string(counter) + ".audio", 
+            //    std::ios::binary | std::ios::app); 
 
             char* dataCopy = new char[dataSize];
             for (int c = 0; c < dataSize-1; c += 2)
@@ -137,7 +140,8 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
                 dataCopy[c + 1] = data[c];
             }
 
-            fout.write(dataCopy, dataSize); 
+            //fout.write(dataCopy, dataSize); 
+            //fout.close(); 
 
             //fwrite(dataCopy, 1, dataSize, fOutFid);
             //delete dataCopy;

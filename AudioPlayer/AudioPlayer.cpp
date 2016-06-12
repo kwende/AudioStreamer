@@ -10,6 +10,7 @@
 #include "WaveFormDataStreamer.h"
 #include <iostream>
 #include "SpeakerSink.h"
+#include <string>
 
 void afterPlaying(void* clientData); // forward
 
@@ -18,7 +19,7 @@ void playSource()
     TaskScheduler* scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment* environment = BasicUsageEnvironment::createNew(*scheduler);
 
-    SpeakerSink* sink = SpeakerSink::createNew(*environment, "c:/users/brush/desktop/fromclient.audio");
+    SpeakerSink* sink = SpeakerSink::createNew(*environment, "c:/users/ben/desktop/fromclient.audio");
 
     unsigned int rtpPortNum = 1234;
     unsigned int rtcpPortNum = rtpPortNum + 1;
@@ -58,6 +59,54 @@ void playSource()
 }
 
 #include <fstream>
+
+void doAudioFromDirectory()
+{
+    WAVEFORMATEX pFormat;
+
+    pFormat.nSamplesPerSec = 44100;
+    pFormat.wBitsPerSample = 16;
+    pFormat.nChannels = 1;
+    pFormat.cbSize = 0;
+    pFormat.wFormatTag = WAVE_FORMAT_PCM;
+    pFormat.nBlockAlign = (pFormat.wBitsPerSample >> 3) * pFormat.nChannels;
+    pFormat.nAvgBytesPerSec = pFormat.nBlockAlign * pFormat.nSamplesPerSec;
+
+    HWAVEOUT waveHandle;
+
+    MMRESULT result = ::waveOutOpen(
+        &waveHandle,
+        WAVE_MAPPER,
+        &pFormat,
+        0,
+        0,
+        CALLBACK_NULL);
+
+    for (int c = 1; c <= 885; c++)
+    {
+        std::ifstream in("c:/users/ben/desktop/output/" 
+            + std::to_string(c) + ".audio", std::ios::binary | std::ios::ate);
+        std::streampos pos = in.tellg();
+        in.seekg(0, in.beg);
+        char* dataCopy = new char[pos];
+        in.read(dataCopy, pos);
+        in.close(); 
+
+        WAVEHDR waveHeader;
+        ::ZeroMemory(&waveHeader, sizeof(waveHeader));
+        waveHeader.dwBufferLength = pos;
+        waveHeader.lpData = (LPSTR)dataCopy;
+
+        ::waveOutPrepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
+        ::waveOutWrite(waveHandle, &waveHeader, sizeof(WAVEHDR));
+        //::Sleep(1); 
+        //std::cout << "."; 
+    }
+
+    getchar(); 
+    
+    //::waveOutUnprepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
+}
 
 void doAudio()
 {
@@ -107,7 +156,7 @@ void doServer()
     unsigned int ttl = 7;
 
     struct in_addr destinationAddress;
-    destinationAddress.s_addr = our_inet_addr("172.17.5.156"); 
+    destinationAddress.s_addr = our_inet_addr("192.168.1.3"); 
     //destinationAddress.s_addr = our_inet_addr("239.255.42.42");
     const Port rtpPort(rtpPortNumber);
     const Port rtcpPort(rtcpPortNumber);
@@ -141,7 +190,8 @@ void doServer()
     unsigned samplingFrequency = 44100;
     unsigned granularityInMS = 20;
 
-    AudioInputDevice *source = AudioInputDevice::createNew(*env, 0, bitsPerSample, numChannels, samplingFrequency);
+    AudioInputDevice *source = AudioInputDevice::createNew(*env, 0, bitsPerSample, 
+        numChannels, samplingFrequency);
     FramedSource* swappedSource = EndianSwap16::createNew(*env, source);
 
     Boolean started = sink->startPlaying(*swappedSource, afterPlaying, sink);
@@ -152,9 +202,8 @@ void doServer()
 
 int main(int argc, char** argv)
 {
-    //doAudio(); 
-    //getchar(); 
-    //return 0; 
+    doAudioFromDirectory(); 
+    return 0; 
     if (argc > 0 && strcmp(argv[1], "s") == 0)
     {
         std::cout << "running as server" << std::endl;
