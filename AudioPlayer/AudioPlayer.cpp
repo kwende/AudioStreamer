@@ -58,10 +58,14 @@ void playSource()
     environment->taskScheduler().doEventLoop(); // does not return
 }
 
-
+const int NumberOfHeaders = 20; 
+WAVEHDR* waveHeaders; 
+int currentHeader = 0; 
+int headersInUse = 0; 
+CRITICAL_SECTION section; 
 
 #include <fstream>
-void CALLBACK waveOutProc(
+void CALLBACK waveOutProc2(
     HWAVEOUT  hwo,
     UINT      uMsg,
     DWORD_PTR dwInstance,
@@ -70,12 +74,17 @@ void CALLBACK waveOutProc(
 )
 {
     std::cout << "!"; 
+    ::EnterCriticalSection(&section); 
+    headersInUse--; 
+    ::LeaveCriticalSection(&section); 
     return; 
 }
 
 
 void doAudioFromDirectory()
 {
+    ::InitializeCriticalSection(&section); 
+
     WAVEFORMATEX pFormat;
 
     pFormat.nSamplesPerSec = 44100;
@@ -92,11 +101,13 @@ void doAudioFromDirectory()
         &waveHandle,
         WAVE_MAPPER,
         &pFormat,
-        (DWORD_PTR)waveOutProc,
+        (DWORD_PTR)waveOutProc2,
         (DWORD_PTR)0,
         CALLBACK_FUNCTION);
 
     std::ofstream out("C:/users/brush/desktop/output/merged2.audio", std::ios::binary);
+
+    waveHeaders = new WAVEHDR[NumberOfHeaders];
 
     for (int c = 1; c <= 500; c++)
     {
@@ -108,19 +119,40 @@ void doAudioFromDirectory()
         in.close();
         out.write(dataCopy, pos);
 
-        WAVEHDR *waveHeader = new WAVEHDR();
-        ::ZeroMemory(waveHeader, sizeof(waveHeader));
-        waveHeader->dwBufferLength = pos;
-        waveHeader->lpData = (LPSTR)dataCopy;
+        while (headersInUse == NumberOfHeaders)
+        {
+            ::Sleep(10); 
+        }
 
-        ::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
-        MMRESULT result = ::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
+        if (headersInUse < NumberOfHeaders)
+        {
+            ::EnterCriticalSection(&section);
+            headersInUse++;
+            ::LeaveCriticalSection(&section);
+
+
+            std::cout << currentHeader % NumberOfHeaders << ","; 
+            WAVEHDR *waveHeader = &waveHeaders[currentHeader % NumberOfHeaders]; 
+
+            if (waveHeader->dwFlags & WHDR_PREPARED)
+                waveOutUnprepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
+
+            ::ZeroMemory(waveHeader, sizeof(waveHeader));
+            waveHeader->dwBufferLength = pos;
+            waveHeader->lpData = (LPSTR)dataCopy;
+
+            ::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
+
+            MMRESULT result = ::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
+            currentHeader++; 
+        }
+
 
        // while (::waveOutUnprepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR)) != 0)
         //{
             //::Sleep(5);
         //}
-        std::cout << ".";
+        //std::cout << ".";
     }
 
     //for (int c = 1; c <= 500;c+=3)

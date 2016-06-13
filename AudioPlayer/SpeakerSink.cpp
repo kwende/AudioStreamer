@@ -1,3 +1,4 @@
+
 #include "stdafx.h"
 #include "SpeakerSink.h"
 #include "FileSink.hh"
@@ -7,6 +8,31 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+
+const int NumberOfHeaders = 20;
+
+#include <fstream>
+
+void CALLBACK waveOutProc(
+    HWAVEOUT  hwo,
+    UINT      uMsg,
+    DWORD_PTR dwInstance,
+    DWORD_PTR dwParam1,
+    DWORD_PTR dwParam2
+)
+{
+    SpeakerSink* speakerSink = (SpeakerSink*)dwInstance; 
+    speakerSink->HandleCallback(); 
+
+    return;
+}
+
+void SpeakerSink::HandleCallback()
+{
+    ::EnterCriticalSection(&section);
+    headersInUse--;
+    ::LeaveCriticalSection(&section);
+}
 
 SpeakerSink::SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
     char const* perFrameFileNamePrefix)
@@ -32,13 +58,21 @@ SpeakerSink::SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
     pFormat.nBlockAlign = (pFormat.wBitsPerSample >> 3) * pFormat.nChannels;
     pFormat.nAvgBytesPerSec = pFormat.nBlockAlign * pFormat.nSamplesPerSec;
 
+    ::InitializeCriticalSection(&section); 
+
     MMRESULT result = ::waveOutOpen(
         &waveHandle,
         WAVE_MAPPER,
         &pFormat,
-        0,
-        0,
-        CALLBACK_NULL);
+        (DWORD_PTR)waveOutProc,
+        (DWORD_PTR)this,
+        CALLBACK_FUNCTION);
+
+    waveHeaders = new WAVEHDR[NumberOfHeaders];
+    for (int c = 0; c < NumberOfHeaders; c++)
+    {
+        ::ZeroMemory(&waveHeaders[c], sizeof(WAVEHDR)); 
+    }
 }
 
 SpeakerSink::~SpeakerSink() {
@@ -123,11 +157,46 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
     if (!packetIsLost)
 #endif
 
-
-
         if (fOutFid != NULL && data != NULL) {
 
-            std::cout << "."; 
+            //std::cout << "."; 
+
+            while (headersInUse == NumberOfHeaders)
+            {
+                ::Sleep(10);
+            }
+
+            if (headersInUse < NumberOfHeaders)
+            {
+                ::EnterCriticalSection(&section);
+                headersInUse++;
+                ::LeaveCriticalSection(&section);
+
+                char* dataCopy = new char[dataSize];
+                for (int c = 0; c < dataSize - 1; c += 2)
+                {
+                    dataCopy[c] = data[c + 1];
+                    dataCopy[c + 1] = data[c];
+                }
+
+                //std::cout << currentHeader % NumberOfHeaders << ",";
+                WAVEHDR *waveHeader = &waveHeaders[currentHeader % NumberOfHeaders];
+
+                if (waveHeader->dwFlags & WHDR_PREPARED)
+                    waveOutUnprepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
+
+                if (waveHeader->lpData)
+                    delete waveHeader->lpData; 
+
+                ::ZeroMemory(waveHeader, sizeof(waveHeader));
+                waveHeader->dwBufferLength = dataSize;
+                waveHeader->lpData = (LPSTR)dataCopy;
+
+                ::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
+
+                MMRESULT result = ::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
+                currentHeader++;
+            }
 
           /*  counter++; 
             std::ofstream fout("c:/users/brush/desktop/output/" + std::to_string(counter) + ".audio", 
@@ -146,20 +215,20 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
             fwrite(dataCopy, 1, dataSize, fOutFid);
             delete dataCopy;*/
 
-            char* dataCopy = new char[dataSize];
-            for (int c = 0; c < dataSize - 1; c += 2)
-            {
-                dataCopy[c] = data[c + 1];
-                dataCopy[c + 1] = data[c];
-            }
+            //char* dataCopy = new char[dataSize];
+            //for (int c = 0; c < dataSize - 1; c += 2)
+            //{
+            //    dataCopy[c] = data[c + 1];
+            //    dataCopy[c + 1] = data[c];
+            //}
 
-            WAVEHDR* waveHeader = new WAVEHDR();
-            ::ZeroMemory(waveHeader, sizeof(WAVEHDR));
-            waveHeader->dwBufferLength = dataSize;
-            waveHeader->lpData = (LPSTR)dataCopy;
+            //WAVEHDR* waveHeader = new WAVEHDR();
+            //::ZeroMemory(waveHeader, sizeof(WAVEHDR));
+            //waveHeader->dwBufferLength = dataSize;
+            //waveHeader->lpData = (LPSTR)dataCopy;
 
-            ::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
-            ::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
+            //::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
+            //::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
         }
 }
 

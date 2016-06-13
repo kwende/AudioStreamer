@@ -16,6 +16,7 @@ public:
     virtual void addData(unsigned char const* data, unsigned dataSize,
         struct timeval presentationTime);
     // (Available in case a client wants to add extra data to the output file)
+    void HandleCallback(); 
 
 protected:
     SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
@@ -43,4 +44,9 @@ protected:
     struct timeval fPrevPresentationTime;
     unsigned fSamePresentationTimeCounter;
     HWAVEOUT waveHandle;
+
+    WAVEHDR* waveHeaders;
+    int currentHeader = 0;
+    int headersInUse = 0;
+    CRITICAL_SECTION section;
 };
