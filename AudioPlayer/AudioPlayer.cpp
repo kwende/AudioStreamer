@@ -19,7 +19,7 @@ void playSource()
     TaskScheduler* scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment* environment = BasicUsageEnvironment::createNew(*scheduler);
 
-    SpeakerSink* sink = SpeakerSink::createNew(*environment, "c:/users/ben/desktop/fromclient.audio");
+    SpeakerSink* sink = SpeakerSink::createNew(*environment, "c:/users/brush/desktop/output/fromclient.audio");
 
     unsigned int rtpPortNum = 1234;
     unsigned int rtcpPortNum = rtpPortNum + 1;
@@ -40,7 +40,7 @@ void playSource()
     int fSamplingFrequency = 44100;
     int fNumChannels = 1;
     RTPSource* rtpSource = SimpleRTPSource::createNew(
-        *environment, &rtpGroupSock, payloadFormatCode, 
+        *environment, &rtpGroupSock, payloadFormatCode,
         fSamplingFrequency, "audio/L16", 0, False /*no 'M' bit*/);
 
     const unsigned maxCNAMElen = 100;
@@ -58,7 +58,21 @@ void playSource()
     environment->taskScheduler().doEventLoop(); // does not return
 }
 
+
+
 #include <fstream>
+void CALLBACK waveOutProc(
+    HWAVEOUT  hwo,
+    UINT      uMsg,
+    DWORD_PTR dwInstance,
+    DWORD_PTR dwParam1,
+    DWORD_PTR dwParam2
+)
+{
+    std::cout << "!"; 
+    return; 
+}
+
 
 void doAudioFromDirectory()
 {
@@ -78,33 +92,70 @@ void doAudioFromDirectory()
         &waveHandle,
         WAVE_MAPPER,
         &pFormat,
-        0,
-        0,
-        CALLBACK_NULL);
+        (DWORD_PTR)waveOutProc,
+        (DWORD_PTR)0,
+        CALLBACK_FUNCTION);
 
-    for (int c = 1; c <= 885; c++)
+    std::ofstream out("C:/users/brush/desktop/output/merged2.audio", std::ios::binary);
+
+    for (int c = 1; c <= 500; c++)
     {
-        std::ifstream in("c:/users/ben/desktop/output/" 
-            + std::to_string(c) + ".audio", std::ios::binary | std::ios::ate);
+        std::ifstream in("c:/users/brush/desktop/output/" + std::to_string(c) + ".audio", std::ios::binary | std::ios::ate);
         std::streampos pos = in.tellg();
         in.seekg(0, in.beg);
         char* dataCopy = new char[pos];
         in.read(dataCopy, pos);
-        in.close(); 
+        in.close();
+        out.write(dataCopy, pos);
 
-        WAVEHDR waveHeader;
-        ::ZeroMemory(&waveHeader, sizeof(waveHeader));
-        waveHeader.dwBufferLength = pos;
-        waveHeader.lpData = (LPSTR)dataCopy;
+        WAVEHDR *waveHeader = new WAVEHDR();
+        ::ZeroMemory(waveHeader, sizeof(waveHeader));
+        waveHeader->dwBufferLength = pos;
+        waveHeader->lpData = (LPSTR)dataCopy;
 
-        ::waveOutPrepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
-        ::waveOutWrite(waveHandle, &waveHeader, sizeof(WAVEHDR));
-        //::Sleep(1); 
-        //std::cout << "."; 
+        ::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
+        MMRESULT result = ::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
+
+       // while (::waveOutUnprepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR)) != 0)
+        //{
+            //::Sleep(5);
+        //}
+        std::cout << ".";
     }
 
-    getchar(); 
-    
+    //for (int c = 1; c <= 500;c+=3)
+    //{
+    //    for (int j = c; j < c + 3; j++)
+    //    {
+    //        std::ifstream in("c:/users/brush/desktop/output/" + std::to_string(j) + ".audio", std::ios::binary | std::ios::ate);
+    //        std::streampos pos = in.tellg();
+    //        in.seekg(0, in.beg);
+    //        char* dataCopy = new char[pos];
+    //        in.read(dataCopy, pos);
+    //        in.close();
+    //        out.write(dataCopy, pos);
+
+    //        WAVEHDR waveHeader;
+    //        ::ZeroMemory(&waveHeader, sizeof(waveHeader));
+    //        waveHeader.dwBufferLength = pos;
+    //        waveHeader.lpData = (LPSTR)dataCopy;
+
+    //        ::waveOutPrepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
+    //        ::waveOutWrite(waveHandle, &waveHeader, sizeof(WAVEHDR));
+
+    //        // while (::waveOutUnprepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR)) != 0)
+    //        //{
+    //        //}
+    //        std::cout << ".";
+    //    }
+    //    ::Sleep(30);
+
+    //}
+
+    out.close();
+
+    getchar();
+
     //::waveOutUnprepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
 }
 
@@ -117,10 +168,11 @@ void doAudio()
     pFormat.nChannels = 1;
     pFormat.cbSize = 0;
     pFormat.wFormatTag = WAVE_FORMAT_PCM;
+
     pFormat.nBlockAlign = (pFormat.wBitsPerSample >> 3) * pFormat.nChannels;
     pFormat.nAvgBytesPerSec = pFormat.nBlockAlign * pFormat.nSamplesPerSec;
 
-    HWAVEOUT waveHandle; 
+    HWAVEOUT waveHandle;
 
     MMRESULT result = ::waveOutOpen(
         &waveHandle,
@@ -130,11 +182,11 @@ void doAudio()
         0,
         CALLBACK_NULL);
 
-    std::ifstream in("c:/users/ben/desktop/output/fromclient.audio", std::ios::binary | std::ios::ate); 
-    std::streampos pos = in.tellg(); 
-    in.seekg(0, in.beg); 
+    std::ifstream in("c:/users/brush/desktop/output/merged2.audio", std::ios::binary | std::ios::ate);
+    std::streampos pos = in.tellg();
+    in.seekg(0, in.beg);
     char* dataCopy = new char[pos];
-    in.read(dataCopy, pos); 
+    in.read(dataCopy, pos);
 
     WAVEHDR waveHeader;
     ::ZeroMemory(&waveHeader, sizeof(waveHeader));
@@ -145,7 +197,7 @@ void doAudio()
     ::waveOutWrite(waveHandle, &waveHeader, sizeof(WAVEHDR));
     ::waveOutUnprepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
 
-    getchar(); 
+    getchar();
 }
 
 void doServer()
@@ -158,7 +210,7 @@ void doServer()
     unsigned int ttl = 7;
 
     struct in_addr destinationAddress;
-    destinationAddress.s_addr = our_inet_addr("192.168.1.3"); 
+    destinationAddress.s_addr = our_inet_addr("172.17.5.156");
     //destinationAddress.s_addr = our_inet_addr("239.255.42.42");
     const Port rtpPort(rtpPortNumber);
     const Port rtcpPort(rtcpPortNumber);
@@ -192,7 +244,7 @@ void doServer()
     unsigned samplingFrequency = 44100;
     unsigned granularityInMS = 20;
 
-    AudioInputDevice *source = AudioInputDevice::createNew(*env, 0, bitsPerSample, 
+    AudioInputDevice *source = AudioInputDevice::createNew(*env, 0, bitsPerSample,
         numChannels, samplingFrequency);
     FramedSource* swappedSource = EndianSwap16::createNew(*env, source);
 
@@ -204,18 +256,18 @@ void doServer()
 
 int main(int argc, char** argv)
 {
-    //doAudio(); 
-    //return 0; 
+    //doAudioFromDirectory();
+    //return 0;
     if (argc > 0 && strcmp(argv[1], "s") == 0)
     {
         std::cout << "running as server" << std::endl;
-        doServer(); 
-        return 0; 
+        doServer();
+        return 0;
     }
     else
     {
         std::cout << "running as client" << std::endl;
-        playSource(); 
+        playSource();
         return 0;
     }
 
@@ -225,5 +277,5 @@ int main(int argc, char** argv)
 void afterPlaying(void* /*clientData*/) {
 
     // End by closing the media:
-    return; 
+    return;
 }

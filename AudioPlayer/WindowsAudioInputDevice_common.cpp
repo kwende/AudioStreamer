@@ -310,13 +310,13 @@ unsigned WindowsAudioInputDevice_common::readFromBuffers(unsigned char* to, unsi
         }
     }
 
-    if (out == nullptr)
-    {
-        //::DeleteFileA("c:/users/brush/desktop/output.audio");
-        out = new std::ofstream("c:/users/brush/desktop/output.audio", std::ios::binary | std::ios::app | std::ios::out);
-    }
-    out->write((const char*)to, numBytesRead);
-    out->flush();
+    //if (out == nullptr)
+    //{
+    //    //::DeleteFileA("c:/users/brush/desktop/output.audio");
+    //    out = new std::ofstream("c:/users/brush/desktop/output.audio", std::ios::binary | std::ios::app | std::ios::out);
+    //}
+    //out->write((const char*)to, numBytesRead);
+    //out->flush();
 
     //char* dataCopy = new char[numBytesWanted];
     //for (int c = 0; c < numBytesWanted; c ++)

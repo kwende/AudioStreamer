@@ -129,30 +129,37 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
 
             std::cout << "."; 
 
-            counter++; 
-            std::ofstream fout("c:/users/ben/desktop/output/" + std::to_string(counter) + ".audio", 
+          /*  counter++; 
+            std::ofstream fout("c:/users/brush/desktop/output/" + std::to_string(counter) + ".audio", 
                 std::ios::binary | std::ios::app); 
 
-            char* dataCopy = new char[dataSize];
-            for (int c = 0; c < dataSize-1; c += 2)
-            {
+                char* dataCopy = new char[dataSize];
+                for (int c = 0; c < dataSize-1; c += 2)
+                {
                 dataCopy[c] = data[c + 1];
                 dataCopy[c + 1] = data[c];
-            }
+                }
 
             fout.write(dataCopy, dataSize); 
             fout.close(); 
 
             fwrite(dataCopy, 1, dataSize, fOutFid);
-            delete dataCopy;
+            delete dataCopy;*/
 
-            //WAVEHDR waveHeader;
-            //::ZeroMemory(&waveHeader, sizeof(waveHeader));
-            //waveHeader.dwBufferLength = dataSize; 
-            //waveHeader.lpData = (LPSTR)dataCopy;
+            char* dataCopy = new char[dataSize];
+            for (int c = 0; c < dataSize - 1; c += 2)
+            {
+                dataCopy[c] = data[c + 1];
+                dataCopy[c + 1] = data[c];
+            }
 
-            //::waveOutPrepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
-            //::waveOutWrite(waveHandle, &waveHeader, sizeof(WAVEHDR));
+            WAVEHDR* waveHeader = new WAVEHDR();
+            ::ZeroMemory(waveHeader, sizeof(WAVEHDR));
+            waveHeader->dwBufferLength = dataSize;
+            waveHeader->lpData = (LPSTR)dataCopy;
+
+            ::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
+            ::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
         }
 }
 
