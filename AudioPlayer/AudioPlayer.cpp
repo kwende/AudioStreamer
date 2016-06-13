@@ -130,7 +130,7 @@ void doAudio()
         0,
         CALLBACK_NULL);
 
-    std::ifstream in("c:/users/brush/desktop/output.audio", std::ios::binary | std::ios::ate); 
+    std::ifstream in("c:/users/ben/desktop/output/fromclient.audio", std::ios::binary | std::ios::ate); 
     std::streampos pos = in.tellg(); 
     in.seekg(0, in.beg); 
     char* dataCopy = new char[pos];
@@ -144,6 +144,8 @@ void doAudio()
     ::waveOutPrepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
     ::waveOutWrite(waveHandle, &waveHeader, sizeof(WAVEHDR));
     ::waveOutUnprepareHeader(waveHandle, &waveHeader, sizeof(WAVEHDR));
+
+    getchar(); 
 }
 
 void doServer()
@@ -202,8 +204,8 @@ void doServer()
 
 int main(int argc, char** argv)
 {
-    doAudioFromDirectory(); 
-    return 0; 
+    //doAudio(); 
+    //return 0; 
     if (argc > 0 && strcmp(argv[1], "s") == 0)
     {
         std::cout << "running as server" << std::endl;
