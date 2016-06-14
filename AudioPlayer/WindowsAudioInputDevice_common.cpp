@@ -312,8 +312,8 @@ unsigned WindowsAudioInputDevice_common::readFromBuffers(unsigned char* to, unsi
 
     //if (out == nullptr)
     //{
-    //    //::DeleteFileA("c:/users/brush/desktop/output.audio");
-    //    out = new std::ofstream("c:/users/brush/desktop/output.audio", std::ios::binary | std::ios::app | std::ios::out);
+    //    //::DeleteFileA("c:/users/ben/desktop/output.audio");
+    //    out = new std::ofstream("c:/users/ben/desktop/output.audio", std::ios::binary | std::ios::app | std::ios::out);
     //}
     //out->write((const char*)to, numBytesRead);
     //out->flush();
@@ -358,8 +358,8 @@ void WindowsAudioInputDevice_common::waveInProc(WAVEHDR* hdr) {
 
     //if (out == nullptr)
     //{
-    //    ::DeleteFileA("c:/users/brush/desktop/output.audio"); 
-    //    out = new std::ofstream("c:/users/brush/desktop/output.audio", std::ios::binary | std::ios::app | std::ios::out); 
+    //    ::DeleteFileA("c:/users/ben/desktop/output.audio"); 
+    //    out = new std::ofstream("c:/users/ben/desktop/output.audio", std::ios::binary | std::ios::app | std::ios::out); 
     //}
     //out->write(hdr->lpData, hdr->dwBytesRecorded); 
     //out->flush(); 

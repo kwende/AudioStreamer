@@ -19,7 +19,7 @@ void playSource()
     TaskScheduler* scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment* environment = BasicUsageEnvironment::createNew(*scheduler);
 
-    SpeakerSink* sink = SpeakerSink::createNew(*environment, "c:/users/brush/desktop/output/fromclient.audio");
+    SpeakerSink* sink = SpeakerSink::createNew(*environment, "c:/users/ben/desktop/output/fromclient.audio");
 
     unsigned int rtpPortNum = 1234;
     unsigned int rtcpPortNum = rtpPortNum + 1;
@@ -105,13 +105,13 @@ void doAudioFromDirectory()
         (DWORD_PTR)0,
         CALLBACK_FUNCTION);
 
-    std::ofstream out("C:/users/brush/desktop/output/merged2.audio", std::ios::binary);
+    std::ofstream out("C:/users/ben/desktop/output/merged2.audio", std::ios::binary);
 
     waveHeaders = new WAVEHDR[NumberOfHeaders];
 
     for (int c = 1; c <= 500; c++)
     {
-        std::ifstream in("c:/users/brush/desktop/output/" + std::to_string(c) + ".audio", std::ios::binary | std::ios::ate);
+        std::ifstream in("c:/users/ben/desktop/output/" + std::to_string(c) + ".audio", std::ios::binary | std::ios::ate);
         std::streampos pos = in.tellg();
         in.seekg(0, in.beg);
         char* dataCopy = new char[pos];
@@ -159,7 +159,7 @@ void doAudioFromDirectory()
     //{
     //    for (int j = c; j < c + 3; j++)
     //    {
-    //        std::ifstream in("c:/users/brush/desktop/output/" + std::to_string(j) + ".audio", std::ios::binary | std::ios::ate);
+    //        std::ifstream in("c:/users/ben/desktop/output/" + std::to_string(j) + ".audio", std::ios::binary | std::ios::ate);
     //        std::streampos pos = in.tellg();
     //        in.seekg(0, in.beg);
     //        char* dataCopy = new char[pos];
@@ -214,7 +214,7 @@ void doAudio()
         0,
         CALLBACK_NULL);
 
-    std::ifstream in("c:/users/brush/desktop/output/merged2.audio", std::ios::binary | std::ios::ate);
+    std::ifstream in("c:/users/ben/desktop/output/merged2.audio", std::ios::binary | std::ios::ate);
     std::streampos pos = in.tellg();
     in.seekg(0, in.beg);
     char* dataCopy = new char[pos];
@@ -242,7 +242,7 @@ void doServer()
     unsigned int ttl = 7;
 
     struct in_addr destinationAddress;
-    destinationAddress.s_addr = our_inet_addr("172.17.5.156");
+    destinationAddress.s_addr = our_inet_addr("192.168.1.3");
     //destinationAddress.s_addr = our_inet_addr("239.255.42.42");
     const Port rtpPort(rtpPortNumber);
     const Port rtcpPort(rtcpPortNumber);

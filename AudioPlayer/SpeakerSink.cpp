@@ -159,8 +159,6 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
 
         if (fOutFid != NULL && data != NULL) {
 
-            //std::cout << "."; 
-
             while (headersInUse == NumberOfHeaders)
             {
                 ::Sleep(10);
@@ -199,7 +197,7 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
             }
 
           /*  counter++; 
-            std::ofstream fout("c:/users/brush/desktop/output/" + std::to_string(counter) + ".audio", 
+            std::ofstream fout("c:/users/ben/desktop/output/" + std::to_string(counter) + ".audio", 
                 std::ios::binary | std::ios::app); 
 
                 char* dataCopy = new char[dataSize];

@@ -11,8 +11,8 @@ namespace FileMerger
     {
         static void Main(string[] args)
         {
-            string[] files = Directory.GetFiles(@"C:\Users\brush\Desktop\output");
-            using (FileStream fs = File.OpenWrite("C:/users/brush/desktop/output/merged.audio"))
+            string[] files = Directory.GetFiles(@"C:\Users\ben\Desktop\output");
+            using (FileStream fs = File.OpenWrite("C:/users/ben/desktop/output/merged.audio"))
             {
                 foreach (string file in files)
                 {
