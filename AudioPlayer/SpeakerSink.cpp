@@ -8,6 +8,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include "Groupsock2.h"
 
 const int NumberOfHeaders = 20;
 
@@ -159,6 +160,15 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
 
         if (fOutFid != NULL && data != NULL) {
 
+            RTPSource* source = (RTPSource*)this->fSource;
+            sockaddr_in address = ((Groupsock2*)source->RTPgs())->GetAddress(); 
+
+            char szBuffer[512];
+            ::inet_ntop(address.sin_family, &address.sin_addr, szBuffer, sizeof(szBuffer));
+            std::cout << szBuffer << std::endl;
+
+  /*          std::cout << inet_ntoa(address) << std::endl; */
+
             while (headersInUse == NumberOfHeaders)
             {
                 ::Sleep(10);
@@ -197,7 +207,7 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
             }
 
           /*  counter++; 
-            std::ofstream fout("c:/users/ben/desktop/output/" + std::to_string(counter) + ".audio", 
+            std::ofstream fout("c:/users/brush/desktop/output/" + std::to_string(counter) + ".audio", 
                 std::ios::binary | std::ios::app); 
 
                 char* dataCopy = new char[dataSize];

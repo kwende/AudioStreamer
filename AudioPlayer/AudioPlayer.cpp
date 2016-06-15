@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "liveMedia.hh"
 #include "GroupsockHelper.hh"
+#include "Groupsock2.h"
 #include <Windows.h>
 #include "BasicUsageEnvironment.hh"
 #include "WaveFormDataStreamer.h"
@@ -19,7 +20,7 @@ void playSource()
     TaskScheduler* scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment* environment = BasicUsageEnvironment::createNew(*scheduler);
 
-    SpeakerSink* sink = SpeakerSink::createNew(*environment, "c:/users/ben/desktop/output/fromclient.audio");
+    SpeakerSink* sink = SpeakerSink::createNew(*environment, "fromclient.audio");
 
     unsigned int rtpPortNum = 1234;
     unsigned int rtcpPortNum = rtpPortNum + 1;
@@ -31,8 +32,8 @@ void playSource()
     const Port rtpPort(rtpPortNum);
     const Port rtcpPort(rtcpPortNum);
 
-    Groupsock rtpGroupSock(*environment, address, rtpPort, 1);
-    Groupsock rtcpGroupSock(*environment, address, rtcpPort, 1);
+    Groupsock2 rtpGroupSock(*environment, address, rtpPort, 1);
+    Groupsock2 rtcpGroupSock(*environment, address, rtcpPort, 1);
 
     //RTPSource* rtpSource = WaveFormDataStreamer::createNew(*environment, &rtpGroupSock);
     int payloadFormatCode = 11;
@@ -40,7 +41,7 @@ void playSource()
     int fSamplingFrequency = 44100;
     int fNumChannels = 1;
     RTPSource* rtpSource = SimpleRTPSource::createNew(
-        *environment, &rtpGroupSock, payloadFormatCode,
+        *environment, (Groupsock*)&rtpGroupSock, payloadFormatCode,
         fSamplingFrequency, "audio/L16", 0, False /*no 'M' bit*/);
 
     const unsigned maxCNAMElen = 100;
@@ -49,7 +50,7 @@ void playSource()
     CNAME[maxCNAMElen] = '\0'; // just in case
 
     RTCPInstance* rtcpInstance =
-        RTCPInstance::createNew(*environment, &rtcpGroupSock, 5000, CNAME, NULL, rtpSource);
+        RTCPInstance::createNew(*environment, (Groupsock*)&rtcpGroupSock, 5000, CNAME, NULL, rtpSource);
 
     *environment << "Beginning receiving multicast stream...\n";
 
@@ -105,13 +106,13 @@ void doAudioFromDirectory()
         (DWORD_PTR)0,
         CALLBACK_FUNCTION);
 
-    std::ofstream out("C:/users/ben/desktop/output/merged2.audio", std::ios::binary);
+    std::ofstream out("merged2.audio", std::ios::binary);
 
     waveHeaders = new WAVEHDR[NumberOfHeaders];
 
     for (int c = 1; c <= 500; c++)
     {
-        std::ifstream in("c:/users/ben/desktop/output/" + std::to_string(c) + ".audio", std::ios::binary | std::ios::ate);
+        std::ifstream in(std::to_string(c) + ".audio", std::ios::binary | std::ios::ate);
         std::streampos pos = in.tellg();
         in.seekg(0, in.beg);
         char* dataCopy = new char[pos];
@@ -159,7 +160,7 @@ void doAudioFromDirectory()
     //{
     //    for (int j = c; j < c + 3; j++)
     //    {
-    //        std::ifstream in("c:/users/ben/desktop/output/" + std::to_string(j) + ".audio", std::ios::binary | std::ios::ate);
+    //        std::ifstream in("c:/users/brush/desktop/output/" + std::to_string(j) + ".audio", std::ios::binary | std::ios::ate);
     //        std::streampos pos = in.tellg();
     //        in.seekg(0, in.beg);
     //        char* dataCopy = new char[pos];
@@ -214,7 +215,7 @@ void doAudio()
         0,
         CALLBACK_NULL);
 
-    std::ifstream in("c:/users/ben/desktop/output/merged2.audio", std::ios::binary | std::ios::ate);
+    std::ifstream in("merged2.audio", std::ios::binary | std::ios::ate);
     std::streampos pos = in.tellg();
     in.seekg(0, in.beg);
     char* dataCopy = new char[pos];
@@ -242,7 +243,7 @@ void doServer()
     unsigned int ttl = 7;
 
     struct in_addr destinationAddress;
-    destinationAddress.s_addr = our_inet_addr("192.168.1.3");
+    destinationAddress.s_addr = our_inet_addr("172.17.5.92");
     //destinationAddress.s_addr = our_inet_addr("239.255.42.42");
     const Port rtpPort(rtpPortNumber);
     const Port rtcpPort(rtcpPortNumber);
