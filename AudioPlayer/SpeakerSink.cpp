@@ -74,6 +74,7 @@ SpeakerSink::SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
     {
         ::ZeroMemory(&waveHeaders[c], sizeof(WAVEHDR)); 
     }
+    _sentBack = false; 
 }
 
 SpeakerSink::~SpeakerSink() {
@@ -124,6 +125,12 @@ void SpeakerSink::afterGettingFrame(void* clientData, unsigned frameSize,
     sink->afterGettingFrame(frameSize, numTruncatedBytes, presentationTime);
 }
 
+void SpeakerSink::SetGroupSocks(Groupsock2 *rtpGroupSock, Groupsock2 *rtcpGroupSock)
+{
+    _rtpSock = rtpGroupSock; 
+    _rtcpSock = rtcpGroupSock; 
+}
+
 int counter = 0; 
 
 void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
@@ -160,12 +167,53 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
 
         if (fOutFid != NULL && data != NULL) {
 
-            RTPSource* source = (RTPSource*)this->fSource;
-            sockaddr_in address = ((Groupsock2*)source->RTPgs())->GetAddress(); 
+            if (!_sentBack)
+            {
+                RTPSource* source = (RTPSource*)this->fSource;
+                sockaddr_in address = ((Groupsock2*)source->RTPgs())->GetAddress();
 
-            char szBuffer[512];
-            ::inet_ntop(address.sin_family, &address.sin_addr, szBuffer, sizeof(szBuffer));
-            std::cout << szBuffer << std::endl;
+                char szBuffer[512];
+                ::inet_ntop(address.sin_family, &address.sin_addr, szBuffer, sizeof(szBuffer));
+                std::cout << szBuffer << std::endl;
+
+                _rtpSock->changeDestinationParameters(address.sin_addr, address.sin_port, 1);
+                _rtcpSock->changeDestinationParameters(address.sin_addr, address.sin_port, 1);
+
+                int payloadFormatCode = 11;
+                const char* mimeType = "L16";
+                int fSamplingFrequency = 44100;
+                int fNumChannels = 1;
+
+                Groupsock* rtpGroupsock = source->RTPgs();
+
+                SimpleRTPSink* sink = SimpleRTPSink::createNew(this->envir(), rtpGroupsock,
+                    payloadFormatCode, fSamplingFrequency,
+                    "audio", mimeType, fNumChannels);
+
+                // Create (and start) a 'RTCP instance' for this RTP sink:
+                const unsigned estimatedSessionBandwidth = 5000; // in kbps; for RTCP b/w share
+                const unsigned maxCNAMElen = 100;
+                unsigned char CNAME[maxCNAMElen + 1];
+                gethostname((char*)CNAME, maxCNAMElen);
+                CNAME[maxCNAMElen] = '\0'; // just in case
+
+                RTCPInstance::createNew(this->envir(), _rtcpSock,
+                    estimatedSessionBandwidth, CNAME,
+                    sink, NULL /* we're a server */, False);
+
+                unsigned char bitsPerSample = 16;
+                unsigned char numChannels = 1;
+                unsigned samplingFrequency = 44100;
+                unsigned granularityInMS = 20;
+
+                //AudioInputDevice *audioInputSource = AudioInputDevice::createNew(this->envir(), 0, bitsPerSample,
+                //    numChannels, samplingFrequency);
+                //FramedSource* swappedSource = EndianSwap16::createNew(this->envir(), audioInputSource);
+
+                //Boolean started = sink->startPlaying(this->fSource, nullptr, sink);
+
+                _sentBack = true; 
+            }
 
   /*          std::cout << inet_ntoa(address) << std::endl; */
 
@@ -173,6 +221,8 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
             {
                 ::Sleep(10);
             }
+
+            std::cout << "."; 
 
             if (headersInUse < NumberOfHeaders)
             {

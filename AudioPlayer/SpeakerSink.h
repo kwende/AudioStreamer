@@ -1,5 +1,6 @@
 #pragma once
 #include "MediaSink.hh"
+#include "Groupsock2.h"
 
 class SpeakerSink : public MediaSink {
 public:
@@ -17,6 +18,8 @@ public:
         struct timeval presentationTime);
     // (Available in case a client wants to add extra data to the output file)
     void HandleCallback(); 
+
+    void SetGroupSocks(Groupsock2* rtpGroupSock, Groupsock2* rtcpGroupSock);
 
 protected:
     SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
@@ -49,4 +52,7 @@ protected:
     int currentHeader = 0;
     int headersInUse = 0;
     CRITICAL_SECTION section;
+    bool _sentBack; 
+
+    Groupsock2 *_rtpSock, *_rtcpSock; 
 };

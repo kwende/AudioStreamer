@@ -35,6 +35,8 @@ void playSource()
     Groupsock2 rtpGroupSock(*environment, address, rtpPort, 1);
     Groupsock2 rtcpGroupSock(*environment, address, rtcpPort, 1);
 
+    sink->SetGroupSocks(&rtpGroupSock, &rtcpGroupSock); 
+
     //RTPSource* rtpSource = WaveFormDataStreamer::createNew(*environment, &rtpGroupSock);
     int payloadFormatCode = 11;
     const char* mimeType = "L16";
