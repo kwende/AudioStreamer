@@ -176,8 +176,8 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
                 ::inet_ntop(address.sin_family, &address.sin_addr, szBuffer, sizeof(szBuffer));
                 std::cout << szBuffer << std::endl;
 
-                _rtpSock->changeDestinationParameters(address.sin_addr, address.sin_port, 1);
-                _rtcpSock->changeDestinationParameters(address.sin_addr, address.sin_port, 1);
+                _rtpSock->changeDestinationParameters(address.sin_addr, 5555, 1);
+                _rtcpSock->changeDestinationParameters(address.sin_addr, 5555, 1);
 
                 int payloadFormatCode = 11;
                 const char* mimeType = "L16";
@@ -206,13 +206,21 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
                 unsigned samplingFrequency = 44100;
                 unsigned granularityInMS = 20;
 
-                //AudioInputDevice *audioInputSource = AudioInputDevice::createNew(this->envir(), 0, bitsPerSample,
-                //    numChannels, samplingFrequency);
-                //FramedSource* swappedSource = EndianSwap16::createNew(this->envir(), audioInputSource);
+                //WAVAudioFileSource* waveAudioSource = WAVAudioFileSource::createNew(this->envir(), "C:/users/brush/desktop/music.wav"); 
 
-                //Boolean started = sink->startPlaying(this->fSource, nullptr, sink);
+                ////AudioInputDevice *audioInputSource = AudioInputDevice::createNew(this->envir(), 0, bitsPerSample,
+                ////    numChannels, samplingFrequency);
+                //FramedSource* swappedSource = EndianSwap16::createNew(this->envir(), waveAudioSource);
+
+                AudioInputDevice *audioSource = AudioInputDevice::createNew(this->envir(), 0, bitsPerSample,
+                    numChannels, samplingFrequency);
+                FramedSource* swappedSource = EndianSwap16::createNew(this->envir(), audioSource);
+
+                Boolean started = sink->startPlaying(*swappedSource, nullptr, sink);
 
                 _sentBack = true; 
+
+                std::cout << "running on port " << address.sin_port << std::endl; 
             }
 
   /*          std::cout << inet_ntoa(address) << std::endl; */

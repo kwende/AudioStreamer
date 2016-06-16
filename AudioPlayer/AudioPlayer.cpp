@@ -245,7 +245,9 @@ void doServer()
     unsigned int ttl = 7;
 
     struct in_addr destinationAddress;
-    destinationAddress.s_addr = our_inet_addr("172.17.5.92");
+    //destinationAddress.s_addr = our_inet_addr("172.17.5.92");
+    //destinationAddress.s_addr = our_inet_addr("172.17.5.156"); //me
+    destinationAddress.s_addr = our_inet_addr("172.17.5.26"); // lucas
     //destinationAddress.s_addr = our_inet_addr("239.255.42.42");
     const Port rtpPort(rtpPortNumber);
     const Port rtcpPort(rtcpPortNumber);
@@ -282,6 +284,62 @@ void doServer()
     AudioInputDevice *source = AudioInputDevice::createNew(*env, 0, bitsPerSample,
         numChannels, samplingFrequency);
     FramedSource* swappedSource = EndianSwap16::createNew(*env, source);
+
+    Boolean started = sink->startPlaying(*swappedSource, afterPlaying, sink);
+
+    env->taskScheduler().doEventLoop();
+
+}
+
+void doWavServer()
+{
+    TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+    BasicUsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
+
+    unsigned int rtpPortNumber = 1234;
+    unsigned int rtcpPortNumber = rtpPortNumber + 1;
+    unsigned int ttl = 7;
+
+    struct in_addr destinationAddress;
+    //destinationAddress.s_addr = our_inet_addr("172.17.5.92");
+    destinationAddress.s_addr = our_inet_addr("172.17.5.156");
+    //destinationAddress.s_addr = our_inet_addr("239.255.42.42");
+    const Port rtpPort(rtpPortNumber);
+    const Port rtcpPort(rtcpPortNumber);
+
+    Groupsock rtpGroupsock(*env, destinationAddress, rtpPort, ttl);
+    Groupsock rtcpGroupsock(*env, destinationAddress, rtcpPort, ttl);
+
+    int payloadFormatCode = 11;
+    const char* mimeType = "L16";
+    int fSamplingFrequency = 44100;
+    int fNumChannels = 1;
+
+    //return SimpleRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic, );
+    SimpleRTPSink* sink = SimpleRTPSink::createNew(*env, &rtpGroupsock,
+        payloadFormatCode, fSamplingFrequency,
+        "audio", mimeType, fNumChannels);
+
+    // Create (and start) a 'RTCP instance' for this RTP sink:
+    const unsigned estimatedSessionBandwidth = 5000; // in kbps; for RTCP b/w share
+    const unsigned maxCNAMElen = 100;
+    unsigned char CNAME[maxCNAMElen + 1];
+    gethostname((char*)CNAME, maxCNAMElen);
+    CNAME[maxCNAMElen] = '\0'; // just in case
+
+    RTCPInstance::createNew(*env, &rtcpGroupsock,
+        estimatedSessionBandwidth, CNAME,
+        sink, NULL /* we're a server */, False);
+
+    unsigned char bitsPerSample = 16;
+    unsigned char numChannels = 1;
+    unsigned samplingFrequency = 44100;
+    unsigned granularityInMS = 20;
+
+    WAVAudioFileSource* waveAudioSource = WAVAudioFileSource::createNew(*env, "C:/users/brush/desktop/music.wav");
+    //AudioInputDevice *audioInputSource = AudioInputDevice::createNew(this->envir(), 0, bitsPerSample,
+    //    numChannels, samplingFrequency);
+    FramedSource* swappedSource = EndianSwap16::createNew(*env, waveAudioSource);
 
     Boolean started = sink->startPlaying(*swappedSource, afterPlaying, sink);
 
