@@ -5,6 +5,7 @@
 class SpeakerSink : public MediaSink {
 public:
     static SpeakerSink* createNew(UsageEnvironment& env, char const* fileName,
+        Boolean openBackChannel,
         unsigned bufferSize = 20000,
         Boolean oneFilePerFrame = False);
     // "bufferSize" should be at least as large as the largest expected
@@ -23,7 +24,7 @@ public:
 
 protected:
     SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
-        char const* perFrameFileNamePrefix);
+        char const* perFrameFileNamePrefix, bool openBackChannel);
     // called only by createNew()
     virtual ~SpeakerSink();
 
@@ -55,4 +56,6 @@ protected:
     bool _sentBack; 
 
     Groupsock2 *_rtpSock, *_rtcpSock; 
+
+    Boolean _openBackChannel; 
 };

@@ -36,8 +36,11 @@ void SpeakerSink::HandleCallback()
 }
 
 SpeakerSink::SpeakerSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
-    char const* perFrameFileNamePrefix)
+    char const* perFrameFileNamePrefix, bool openBackChannel)
     : MediaSink(env), fOutFid(fid), fBufferSize(bufferSize), fSamePresentationTimeCounter(0) {
+
+    _openBackChannel = openBackChannel; 
+
     fBuffer = new unsigned char[bufferSize];
     if (perFrameFileNamePrefix != NULL) {
         fPerFrameFileNamePrefix = strDup(perFrameFileNamePrefix);
@@ -84,8 +87,9 @@ SpeakerSink::~SpeakerSink() {
     if (fOutFid != NULL) fclose(fOutFid);
 }
 
-SpeakerSink* SpeakerSink::createNew(UsageEnvironment& env, char const* fileName,
+SpeakerSink* SpeakerSink::createNew(UsageEnvironment& env, char const* fileName, Boolean openBackChannel,
     unsigned bufferSize, Boolean oneFilePerFrame) {
+
     do {
         FILE* fid;
         char const* perFrameFileNamePrefix;
@@ -101,7 +105,7 @@ SpeakerSink* SpeakerSink::createNew(UsageEnvironment& env, char const* fileName,
             perFrameFileNamePrefix = NULL;
         }
 
-        return new SpeakerSink(env, fid, bufferSize, perFrameFileNamePrefix);
+        return new SpeakerSink(env, fid, bufferSize, perFrameFileNamePrefix, openBackChannel);
     } while (0);
 
     return NULL;
@@ -167,7 +171,7 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
 
         if (fOutFid != NULL && data != NULL) {
 
-            if (!_sentBack)
+            if (!_sentBack && _openBackChannel)
             {
                 RTPSource* source = (RTPSource*)this->fSource;
                 sockaddr_in address = ((Groupsock2*)source->RTPgs())->GetAddress();
@@ -177,7 +181,7 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
                 std::cout << szBuffer << std::endl;
 
                 _rtpSock->changeDestinationParameters(address.sin_addr, 5555, 1);
-                _rtcpSock->changeDestinationParameters(address.sin_addr, 5555, 1);
+                _rtcpSock->changeDestinationParameters(address.sin_addr, 5556, 1);
 
                 int payloadFormatCode = 11;
                 const char* mimeType = "L16";
@@ -230,7 +234,7 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
                 ::Sleep(10);
             }
 
-            std::cout << "."; 
+            //std::cout << "."; 
 
             if (headersInUse < NumberOfHeaders)
             {
@@ -261,6 +265,7 @@ void SpeakerSink::addData(unsigned char const* data, unsigned dataSize,
                 ::waveOutPrepareHeader(waveHandle, waveHeader, sizeof(WAVEHDR));
 
                 MMRESULT result = ::waveOutWrite(waveHandle, waveHeader, sizeof(WAVEHDR));
+                std::cout << result << " "; 
                 currentHeader++;
             }
 
